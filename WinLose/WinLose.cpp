@@ -58,18 +58,53 @@ double WinGame(Team const a, Team const b)
 double WinMatch(Team const a, Team const b,
 	int winA, int winB)
 {
-	double pa = WinGame(a, b);
 	double p;
-	if (winA == 2 && winB == 0) {
-		p = pa*pa;
-	} else if (winA == 2 && winB == 1) {
-		p = 2 * pa * (1 - pa)*pa;
-	} else if (winA == 1 && winB == 2) {
-		p = 2*(1 - pa) * pa * (1 - pa);
-	} else if (winA == 0 && winB == 2) {
-		p = (1 - pa) * (1 - pa);
+	double pa = WinGame(a, b);
+	double pb = 1 - pa;
+	if (std::max(winA, winB) == 2) { // bo3
+		if (winA == 2 && winB == 0) {
+			p = pa * pa;
+		} else if (winA == 2 && winB == 1) {
+			p = 2 * pa * (1 - pa)*pa;
+		} else if (winA == 1 && winB == 2) {
+			p = 2 * (1 - pa) * pa * (1 - pa);
+		} else if (winA == 0 && winB == 2) {
+			p = (1 - pa) * (1 - pa);
+		}
+		return p;
+	} else if (std::max(winA, winB) == 3) { // bo5
+
+		if (winA == 3 && winB == 0) {
+			p = pa * pa * pa;
+		} else if (winA == 3 && winB == 1) {
+			p = 3 * pb*pa*pa*pa;
+		} else if (winA == 3 && winB == 2) {
+			p = 6 * pb*pb*pa*pa*pa;
+		} else if (winA == 2 && winB == 3) {
+			p = 6 * pb*pb*pb*pa*pa;
+		} else if (winA == 1 && winB == 3) {
+			p = 3 * pb*pb*pb*pa;
+		} else if (winA == 0 && winB == 3) {
+			p = pb*pb*pb;
+		}
+	} else {
+		printf("support bo3 or bo5\n");
+		exit(1);
 	}
 	return p;
+}
+
+double WinMatchInclusively(Team const a, Team const b,
+	int boN)
+{
+	if (boN == 3) {
+		return WinMatch(a, b, 2, 0) + WinMatch(a, b, 2, 1);
+	} else if (boN == 5) {
+		return WinMatch(a, b, 3, 0) + WinMatch(a, b, 3, 1) + WinMatch(a, b, 3, 2);
+	} else {
+		printf("support bo3 or bo5\n");
+		exit(1);
+	}
 }
 
 struct Match {
@@ -260,10 +295,10 @@ void ReadData(Teams &teams, std::vector<Match> &matchs) {
 }
 
 void WinP(Teams &teams) {
-	printf("Probability of winning match\n");
+	printf("Probability of winning match (Bo3)\n");
 	for (auto &t1: teams.fTeams) {
 		for (auto &t2 : teams.fTeams) {
-			double p = WinMatch(t1, t2, 2, 1) + WinMatch(t1, t2, 2, 0);
+			double p = WinMatchInclusively(t1, t2, 3);
 			printf("%5s win %-5s = %6.3f%%\n", t1.fName.c_str(), t2.fName.c_str(), 100*p);
 		}
 	}
@@ -291,7 +326,8 @@ void ScoreToWinRate(Teams &teams, std::vector<Match> &matchs) {
 		if (idx > bins-1) idx = bins-1;
 		ms[idx] += 1;
 		winMatchs[idx] += wa > wb;
-		expWinRates[idx] += WinMatch(ta, tb, 2, 0) + WinMatch(ta, tb, 2, 1);
+		int boN = 2 * std::max(wa, wb) - 1;
+		expWinRates[idx] += WinMatchInclusively(ta, tb, boN);
 
 	}
 	printf("S.Diff. = Score difference\n");
