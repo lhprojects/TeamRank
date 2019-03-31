@@ -61,7 +61,10 @@ double WinMatch(Team const a, Team const b,
 	double p;
 	double pa = WinGame(a, b);
 	double pb = 1 - pa;
-	if (std::max(winA, winB) == 2) { // bo3
+	if (std::max(winA, winB) == 1) {
+		if (winA == 1) return pa;
+		else return pb;
+	} if (std::max(winA, winB) == 2) { // bo3
 		if (winA == 2 && winB == 0) {
 			p = pa * pa;
 		} else if (winA == 2 && winB == 1) {
@@ -88,7 +91,7 @@ double WinMatch(Team const a, Team const b,
 			p = pb*pb*pb;
 		}
 	} else {
-		printf("support bo3 or bo5\n");
+		printf("support bo1, bo3 or bo5\n");
 		exit(1);
 	}
 	return p;
@@ -97,7 +100,9 @@ double WinMatch(Team const a, Team const b,
 double WinMatchInclusively(Team const a, Team const b,
 	int boN)
 {
-	if (boN == 3) {
+	if (boN == 1) {
+		return WinMatch(a, b, 1, 0);
+	} else if (boN == 3) {
 		return WinMatch(a, b, 2, 0) + WinMatch(a, b, 2, 1);
 	} else if (boN == 5) {
 		return WinMatch(a, b, 3, 0) + WinMatch(a, b, 3, 1) + WinMatch(a, b, 3, 2);
@@ -298,8 +303,12 @@ void WinP(Teams &teams) {
 	printf("Probability of winning match (Bo3)\n");
 	for (auto &t1: teams.fTeams) {
 		for (auto &t2 : teams.fTeams) {
-			double p = WinMatchInclusively(t1, t2, 3);
-			printf("%5s win %-5s = %6.3f%%\n", t1.fName.c_str(), t2.fName.c_str(), 100*p);
+			double p1 = WinMatchInclusively(t1, t2, 1);
+			double p3 = WinMatchInclusively(t1, t2, 3);
+			double p5 = WinMatchInclusively(t1, t2, 5);
+			printf("%5s win %-5s = %6.3f%%(Bo1) %6.3f%%(Bo3) %6.3f%%(Bo5)\n",
+				t1.fName.c_str(), t2.fName.c_str(),
+				100*p1, 100 * p3, 100 * p5);
 		}
 	}
 }
