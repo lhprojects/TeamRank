@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="WinLose.cpp">
+    <ClCompile Include="TeamRank.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

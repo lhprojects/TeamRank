@@ -186,7 +186,7 @@ void WinLoseGames(Teams &teams, std::vector<Match> &matchs) {
 		printf("%5s    %2d - %-2d       %2d - %-2d\n", t.fName.c_str(),
 			t.fWinMatch, t.fLoseMatch, t.fWinGames, t.fLoseGames);
 	}
-
+	printf("\n\n");
 }
 
 
@@ -230,6 +230,7 @@ void AnomalyMatches(Teams &teams, std::vector<Match> &matchs) {
 		printf("%5s %d:%d %5s (Probabilit = %10.8f)\n", mat.fTeamA.fName.c_str(), mat.fWinA,
 			mat.fWinB, mat.fTeamB.fName.c_str(), ps[idx]);
 	}
+	printf("\n\n");
 
 }
 
@@ -300,7 +301,7 @@ void ReadData(Teams &teams, std::vector<Match> &matchs) {
 }
 
 void WinP(Teams &teams) {
-	printf("Probability of winning match (Bo3)\n");
+	printf("Probability of winning match\n");
 	for (auto &t1: teams.fTeams) {
 		for (auto &t2 : teams.fTeams) {
 			double p1 = WinMatchInclusively(t1, t2, 1);
@@ -352,6 +353,34 @@ void ScoreToWinRate(Teams &teams, std::vector<Match> &matchs) {
 				i * gap, i * gap + gap, ms[i], winMatchs[i], 100.*winMatchs[i] / 1, 100 * expWinRates[i] / 1);
 		}
 	}
+	printf("\n\n");
+
+}
+
+// Gradient Decent
+void Rank(Teams &teams, std::vector<Match> &matchs) {
+	printf("Rank... Please wait a (few) second(s)\n");
+	std::vector<double> Gradient(teams.fTeams.size());
+	for (int it = 0; it < 500; ++it) {
+
+		double b0 = LogP(matchs) + LogP_Pre(teams);
+		for (size_t i = 0; i < teams.fTeams.size(); ++i) {
+			auto &team = teams.fTeams[i];
+			double s0 = team.fScore;
+			team.fScore = s0 + 1E-3;
+			double b1 = LogP(matchs) + LogP_Pre(teams);
+			team.fScore = s0 - 1E-3;
+			double b2 = LogP(matchs) + LogP_Pre(teams);
+			Gradient[i] = (b2 - b1) / (2E-3);
+			team.fScore = s0;
+		}
+
+		for (size_t i = 0; i < teams.fTeams.size(); ++i) {
+			auto &team = teams.fTeams[i];
+			double delta = 20 / sqrt(1.0 + 0.01*it);
+			team.fScore += -delta*Gradient[i];
+		}
+	}
 }
 
 int main()
@@ -362,50 +391,20 @@ int main()
 
 	ReadData(teams, matchs);
 	WinLoseGames(teams, matchs);
-	printf("Rank... Please wait a (few) second(s)\n");
-	double lastB = LogP(matchs);
-	for (int it = 0; it < 1000; ++it) {
-		for (size_t i = 0; i < teams.fTeams.size(); ++i) {
-			auto &team = teams.fTeams[i];
-			double s = team.fScore;
+	
 
-			// increase 1
-			double delta = 1 / sqrt(1 + 0.1*it);
-			team.fScore = s + delta;
-			double b = LogP(matchs) + LogP_Pre(teams);
-			if (b > lastB) {
-				lastB = b;
-				//printf("%5s %6lf + 1 Likelihood %f\n", team.fName.c_str(), s, b);
-			} else{
-				team.fScore = s - delta;
-				double b = LogP(matchs) + LogP_Pre(teams);
-				if (b > lastB) {
-					lastB = b;
-					//printf("%5s %6lf - 1 Likelihood %f\n", team.fName.c_str(), s, b);
-				} else {
-					lastB = b;
-					team.fScore = s;
-					//printf("%5s %6lf + 0 Likelihood %f\n", team.fName.c_str(), s, b);
-				}
-			}
-		}
-
-
-		//printf("Iter %d\n", it);
-		//printf("Teams rank:\n");
-		//for (auto &t : rank) {
-		//	printf("%5s %6.3lf\n", t.fName.c_str(), t.fScore);
-		//}
-	}
+	Rank(teams, matchs);
 	std::vector<Team> rank(teams.fTeams.begin(), teams.fTeams.end());
-	std::sort(rank.begin(), rank.end(), [](auto &x, auto &y) { return x.fScore > y.fScore; });
+	std::sort(rank.begin(), rank.end(), [](auto &x, auto &y) { return x.fScore > y.fScore; });	
 	printf("Teams score:\n");
 	for (auto &t : rank) {
 		printf("%5s %6.3lf\n", t.fName.c_str(), t.fScore);
 	}
 	printf("In our model, single game win rate of A to B were 80%%, if the score of A is larger than B by 100.\n");
-	printf("A Bo3 win rate of A to B were %4.1f%%, if the score of A is larger than B by 100.\n",
-		100*(0.8*0.8+2*0.8*0.2));
+	printf("A Bo3 win rate of A to B were %4.1f%%, if the score of A is larger than B by 100.\n\n\n",
+		100 * (0.8*0.8 + 2 * 0.8*0.2));
+
+
 
 	ScoreToWinRate(teams, matchs);
 	AnomalyMatches(teams, matchs);
