@@ -91,7 +91,7 @@ double WinMatch(Team const a, Team const b,
 			p = pb*pb*pb;
 		}
 	} else {
-		printf("support bo1, bo3 or bo5\n");
+		printf("support only bo1, bo3 or bo5, you have a bo%d\n", std::max(winA, winB)*2+1);
 		exit(1);
 	}
 	return p;
@@ -189,16 +189,35 @@ void WinLoseGames(Teams &teams, std::vector<Match> &matchs) {
 	printf("\n\n");
 }
 
+double pvalue(Match &match) {
+	using namespace std;
+	int N = max(match.fWinA, match.fWinB);
+	int boN = 1+2*max(match.fWinA, match.fWinB);
+	std::vector<double> ps;
+	for(int i = 0; i < N; ++i) {
+		ps.push_back( WinMatch(match.fTeamA, match.fTeamB, i, N ) );	
+		ps.push_back( WinMatch(match.fTeamA, match.fTeamB, N, i ) );	
+		//printf("%d %f %d %d\n", i, ps[i], i, N);
+	}
+	double p = WinMatch(match.fTeamA, match.fTeamB, match.fWinA, match.fWinB);
+	std::sort(ps.begin(), ps.end());
+	double pvalue = 0;
+	for(size_t i = 0; i < ps.size(); ++i) {
+		//printf("%d %f\n", i, ps[i]);
+		if(p < ps[i]-1E-6) {
+			break;
+		}
+		pvalue += ps[i];
+	}
+	return pvalue;
+}
 
 void AnomalyMatches(Teams &teams, std::vector<Match> &matchs) {
 
 	std::vector<double> ps;
 	std::vector<int> index;
 	for (auto &match : matchs) {
-		Team t1("");
-		double p0 = WinMatch(t1, t1, match.fWinA, match.fWinB);
-		double p = WinMatch(match.fTeamA, match.fTeamB, match.fWinA, match.fWinB)/p0;
-		ps.push_back(p);
+		ps.push_back(pvalue(match));
 		index.push_back(index.size());
 	}
 
@@ -208,26 +227,28 @@ void AnomalyMatches(Teams &teams, std::vector<Match> &matchs) {
 
 	printf("Anamoly Matches (Weak team beat strong team.):\n");
 	for (auto &idx : index) {
-		if (ps[idx] > 0.5) break;
+		if (ps[idx] > 0.15) break;
 		
 		Match &mat = matchs[idx];
-		printf("%5s %d:%d %5s (Probabilit = %10.8f)\n", mat.fTeamA.fName.c_str(), mat.fWinA,
+		printf("%5s %d:%d %5s (p-value = %6.2g)\n", mat.fTeamA.fName.c_str(), mat.fWinA,
 			mat.fWinB, mat.fTeamB.fName.c_str(), ps[idx]);
 	}
 
-	std::sort(index.begin(), index.end(), [&](int a, int b) {
-		return ps[a] < ps[b];
-	});
-
+	ps.clear();
+	index.clear();
+	for (auto &match : matchs) {
+		ps.push_back(WinMatch(match.fTeamA, match.fTeamB, match.fWinA, match.fWinB));
+		index.push_back(index.size());
+	}
 	std::sort(index.begin(), index.end(), [&](int a, int b) {
 		return ps[a] > ps[b];
 	});
-	printf("Easy Matches (Strong team beat weak team):\n");
+	printf("Most Likely Matches (Strong team beat weak team):\n");
 	for (auto &idx : index) {
-		if (ps[idx] < 2) break;
+		if (ps[idx] < 0.7) break;
 
 		Match &mat = matchs[idx];
-		printf("%5s %d:%d %5s (Probabilit = %10.8f)\n", mat.fTeamA.fName.c_str(), mat.fWinA,
+		printf("%5s %d:%d %5s (prob. = %6.2g)\n", mat.fTeamA.fName.c_str(), mat.fWinA,
 			mat.fWinB, mat.fTeamB.fName.c_str(), ps[idx]);
 	}
 	printf("\n\n");
