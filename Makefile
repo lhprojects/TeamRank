@@ -1,3 +1,3 @@
 all: src/TeamRank.cpp
-	g++ -std=c++11 src/TeamRank.cpp -o TeamRank
+	g++ -std=c++14 src/TeamRank.cpp -o TeamRank
 	

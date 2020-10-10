@@ -286,7 +286,7 @@ void ReadData(Teams &teams, std::vector<Match> &matchs) {
 
 	std::cout << tns.size() << " teams:\n    ";
 	for (auto &t : tns) {
-		std::cout << t << std::ends;
+		std::cout << t << " "<< std::ends;
 		teams.AddTeam(Team(t));
 	}
 
@@ -342,15 +342,15 @@ void ScoreToWinRate(Teams &teams, std::vector<Match> &matchs) {
 	}
 	printf("S.Diff. = Score difference\n");
 	printf("P(Win.) = Probability to win calculated by score difference\n");
-	printf("S.Diff. | Matchs  Win  Win./Matchs | P(Win.)\n");
+	printf("S.Diff. | %6s %6s WinRate | P(Win.)\n", "Matchs", "Win");
 	for (size_t i = 0; i < ms.size(); ++i) {
 		if (ms[i] != 0) {
-			printf("%3d-%-3d | %3d %3d %5.1f%% | %5.1f%%\n",
-				i * gap, i * gap + gap, ms[i], winMatchs[i], 100.*winMatchs[i] / ms[i], 100 * expWinRates[i] / ms[i]);
+			printf("%3d-%-3d | %6d %6d %6.1f%% | %6.1f%%\n",
+				(int)i * gap, (int)i * gap + gap, ms[i], winMatchs[i], 100.*winMatchs[i] / ms[i], 100 * expWinRates[i] / ms[i]);
 		}
 		if (ms[i] == 0) {
-			printf("%3d-%-3d | %3d %3d %5.1f%% | %5.1f%%\n",
-				i * gap, i * gap + gap, ms[i], winMatchs[i], 100.*winMatchs[i] / 1, 100 * expWinRates[i] / 1);
+			printf("%3d-%-3d | %6d %6d %6.1f%% | %6.1f%%\n",
+				(int)i * gap, (int)i * gap + gap, ms[i], winMatchs[i], 100.*winMatchs[i] / 1, 100 * expWinRates[i] / 1);
 		}
 	}
 	printf("\n\n");
